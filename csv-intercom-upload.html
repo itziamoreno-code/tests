@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Huli · Intercom Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue: #2a62d4;
+  --blue-dark: #254478;
+  --teal: #1ecad3;
+  --yellow: #ffce31;
+  --black: #1e1e1e;
+  --gray: #474747;
+  --white: #ffffff;
+  --font: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: #dce8f8;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 44px 20px 80px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Fondo con blobs de color Huli */
+.bg-blob {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(60px);
+}
+.bg-blob-1 { width: 560px; height: 560px; top: -140px; left: -140px; background: rgba(42,98,212,.25); animation: blobFloat 10s ease-in-out infinite; }
+.bg-blob-2 { width: 420px; height: 420px; bottom: -80px; right: -80px; background: rgba(30,202,211,.2); animation: blobFloat 12s ease-in-out infinite reverse; }
+.bg-blob-3 { width: 300px; height: 300px; top: 45%; left: 55%; background: rgba(37,68,120,.15); animation: blobFloat 9s ease-in-out infinite 2s; }
+
+@keyframes blobFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(20px,-25px) scale(1.04); }
+  66% { transform: translate(-15px,15px) scale(.97); }
+}
+
+.container { width: 100%; max-width: 680px; position: relative; z-index: 1; animation: pageIn .55s cubic-bezier(.22,1,.36,1) both; }
+@keyframes pageIn { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
+
+/* Liquid glass card */
+.glass {
+  background: rgba(255,255,255,.52);
+  backdrop-filter: blur(24px) saturate(200%) brightness(1.05);
+  -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(1.05);
+  border: 1px solid rgba(255,255,255,.8);
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.9) inset,
+    0 -1px 0 rgba(42,98,212,.08) inset,
+    0 12px 40px rgba(37,68,120,.12),
+    0 4px 12px rgba(37,68,120,.07);
+}
+
+/* Header */
+.header { margin-bottom: 28px; }
+.logo-row { display: flex; align-items: center; gap: 0; margin-bottom: 20px; }
+.logo-plus { font-size: 24px; font-weight: 800; color: var(--blue); line-height: 1; }
+.logo-name { font-size: 24px; font-weight: 800; color: var(--blue-dark); letter-spacing: -.03em; }
+.header h1 { font-size: 27px; font-weight: 800; color: var(--black); letter-spacing: -.03em; margin-bottom: 7px; line-height: 1.2; }
+.header p { font-size: 14px; color: var(--gray); line-height: 1.65; max-width: 520px; }
+
+/* Steps */
+.steps-bar { display: flex; align-items: center; gap: 0; margin-bottom: 24px; padding: 12px 20px; border-radius: 16px; }
+.step-item { display: flex; align-items: center; gap: 8px; }
+.step-num {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800;
+  border: 2px solid rgba(42,98,212,.2);
+  color: rgba(42,98,212,.35);
+  transition: all .4s cubic-bezier(.34,1.56,.64,1);
+  flex-shrink: 0;
+}
+.step-num.active { border-color: var(--blue); color: #fff; background: var(--blue); box-shadow: 0 4px 14px rgba(42,98,212,.4), 0 0 0 4px rgba(42,98,212,.1); transform: scale(1.1); }
+.step-num.done { border-color: var(--teal); color: #fff; background: var(--teal); box-shadow: 0 4px 12px rgba(30,202,211,.35); }
+.step-num.done::after { content: '✓'; font-size: 12px; }
+.step-num.done > span { display: none; }
+.step-label { font-size: 11px; font-weight: 700; color: rgba(30,30,30,.3); white-space: nowrap; transition: color .3s; }
+.step-label.active { color: var(--blue-dark); }
+.step-label.done { color: var(--teal); }
+.step-conn { flex: 1; height: 2px; margin: 0 5px; min-width: 8px; background: rgba(42,98,212,.1); border-radius: 2px; transition: background .4s; overflow: hidden; position: relative; }
+.step-conn.done { background: var(--teal); }
+.step-conn.done::after { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent); animation: shimmer 1.5s ease infinite; }
+@keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+.card { border-radius: 20px; padding: 28px; margin-bottom: 14px; }
+.panel { display: none; }
+.panel.active { display: block; animation: panelIn .38s cubic-bezier(.22,1,.36,1) both; }
+@keyframes panelIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+
+/* Panel 1 — Upload */
+.drop-zone {
+  border: 2px dashed rgba(42,98,212,.25);
+  border-radius: 14px;
+  padding: 44px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .25s;
+  position: relative;
+  overflow: hidden;
+  background: rgba(42,98,212,.025);
+}
+.drop-zone::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 60%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(30,202,211,.07), transparent 70%);
+  pointer-events: none;
+}
+.drop-zone:hover { border-color: var(--blue); background: rgba(42,98,212,.05); }
+.drop-zone.dragover { border-color: var(--teal); border-style: solid; background: rgba(30,202,211,.06); }
+.drop-zone.loaded { border-color: var(--teal); border-style: solid; background: rgba(30,202,211,.04); }
+.drop-zone.loaded .upload-icon { color: var(--teal); }
+.drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-icon {
+  width: 52px; height: 52px; margin: 0 auto 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(42,98,212,.1), rgba(30,202,211,.1));
+  border: 1.5px solid rgba(255,255,255,.9);
+  box-shadow: 0 4px 12px rgba(42,98,212,.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--blue);
+  transition: transform .2s;
+}
+.drop-zone:hover .upload-icon { transform: translateY(-3px); }
+.drop-title { font-size: 16px; font-weight: 700; color: var(--black); margin-bottom: 6px; }
+.drop-sub { font-size: 13px; color: var(--gray); }
+.drop-hint { margin-top: 10px; font-size: 12px; color: rgba(71,71,71,.5); }
+
+.format-box {
+  margin-top: 20px;
+  background: rgba(37,68,120,.04);
+  border: 1px solid rgba(37,68,120,.1);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.section-label { font-size: 11px; font-weight: 800; color: rgba(37,68,120,.45); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+.format-box pre { font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; color: var(--gray); line-height: 1.9; overflow-x: auto; }
+.format-box .req { color: var(--blue); font-weight: 700; }
+.format-box .opt { color: var(--teal); }
+
+/* Panel 2 — Preview */
+.preview-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+  background: rgba(255,255,255,.65);
+  border: 1px solid rgba(42,98,212,.15);
+  color: var(--blue-dark);
+}
+.chip.teal { border-color: rgba(30,202,211,.3); color: #0a7a80; background: rgba(30,202,211,.08); }
+.chip .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(37,68,120,.1); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: rgba(42,98,212,.05); }
+th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 800; color: var(--blue-dark); text-transform: uppercase; letter-spacing: .07em; white-space: nowrap; }
+td { padding: 10px 14px; border-top: 1px solid rgba(37,68,120,.07); color: var(--gray); font-family: 'SF Mono',monospace; font-size: 12px; white-space: nowrap; background: rgba(255,255,255,.35); }
+th.key { color: var(--blue); }
+td.key { color: var(--blue); font-weight: 700; }
+
+.attrs-row { margin-top: 20px; }
+.attrs-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.attr-tag {
+  padding: 5px 12px; border-radius: 8px;
+  font-size: 12px; font-family: monospace; font-weight: 600;
+  background: rgba(30,202,211,.09);
+  border: 1px solid rgba(30,202,211,.28);
+  color: #0a7a80;
+}
+.ptag-cell { color: var(--teal); font-weight: 700; }
+
+/* Panel 3 — Processing */
+.proc-center { text-align: center; padding: 12px 0 22px; }
+.big-num { font-size: 54px; font-weight: 300; letter-spacing: -.05em; color: var(--blue-dark); margin-bottom: 4px; line-height: 1; }
+.big-sub { font-size: 13px; color: var(--gray); font-weight: 600; }
+.pill-track {
+  background: var(--blue-dark);
+  border-radius: 60px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin: 22px 0 16px;
+  height: 68px;
+  overflow: hidden;
+}
+.pill-fill {
+  position: absolute;
+  left: 8px; top: 8px; bottom: 8px;
+  border-radius: 60px;
+  background: var(--teal);
+  transition: width .3s ease;
+  width: 0%;
+  z-index: 0;
+  min-width: 52px;
+}
+.pill-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 0;
+  position: relative;
+  z-index: 1;
+}
+.pill-step {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.35);
+  transition: all .4s cubic-bezier(.34,1.56,.64,1);
+  flex-shrink: 0;
+}
+.pill-step.active {
+  background: var(--teal);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(30,202,211,.5);
+  transform: scale(1.05);
+}
+.pill-step.done {
+  background: var(--teal);
+  color: #fff;
+}
+.prog-labels { display: flex; justify-content: space-between; font-size: 12px; color: rgba(71,71,71,.55); font-weight: 600; }
+.log-box {
+  margin-top: 18px;
+  background: rgba(30,30,30,.04);
+  border: 1px solid rgba(37,68,120,.1);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-family: 'SF Mono',monospace;
+  font-size: 12px;
+  color: var(--gray);
+  max-height: 128px;
+  overflow-y: auto;
+  line-height: 1.9;
+}
+.log-box .ok { color: #0a7a80; }
+.log-box .err { color: #b52a2a; }
+.log-box .info { color: var(--blue); }
+
+/* Panel 4 — Report bento */
+.report-bento { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 12px; margin-bottom: 0; }
+.bento-hero {
+  grid-column: 1 / 2; grid-row: 1 / 2;
+  background: var(--blue-dark);
+  border-radius: 18px; padding: 22px 20px;
+  color: #fff; position: relative; overflow: hidden;
+}
+.bento-hero::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(30,202,211,.2);
+}
+.bento-hero .bh-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; opacity: .55; margin-bottom: 6px; }
+.bento-hero .bh-num { font-size: 42px; font-weight: 800; letter-spacing: -.04em; line-height: 1; color: #fff; margin-bottom: 4px; }
+.bento-hero .bh-sub { font-size: 12px; font-weight: 600; color: var(--teal); }
+
+.bento-stat {
+  border-radius: 18px; padding: 18px 16px;
+  background: rgba(255,255,255,.6);
+  border: 1px solid rgba(255,255,255,.85);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(37,68,120,.07);
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.bento-stat .bs-num { font-size: 32px; font-weight: 800; letter-spacing: -.04em; line-height: 1; margin-bottom: 4px; }
+.bento-stat .bs-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .5; }
+.bento-stat.danger .bs-num { color: #b52a2a; }
+.bento-stat.danger { border-color: rgba(181,42,42,.18); }
+.bento-stat.warning .bs-num { color: #946700; }
+.bento-stat.warning { border-color: rgba(255,206,49,.3); }
+
+.bento-list {
+  grid-column: 1 / 3; grid-row: 2 / 3;
+  border-radius: 18px; overflow: hidden;
+  border: 1px solid rgba(37,68,120,.1);
+}
+.r-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(37,68,120,.07); font-size: 13px; background: rgba(255,255,255,.45); gap: 12px; transition: background .18s; }
+.r-row:last-child { border-bottom: none; justify-content: center; color: rgba(71,71,71,.4); font-size: 12px; font-weight: 700; }
+.r-row:hover { background: rgba(255,255,255,.72); }
+.r-icon { width: 34px; height: 34px; border-radius: 10px; background: rgba(42,98,212,.08); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.r-info { flex: 1; }
+.r-uid { font-size: 13px; color: var(--black); font-weight: 700; }
+.r-name { font-size: 12px; color: var(--gray); font-weight: 500; margin-top: 1px; }
+.badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.badge.ok { background: rgba(30,202,211,.12); color: #0a7a80; border: 1px solid rgba(30,202,211,.25); }
+.badge.fail { background: rgba(181,42,42,.07); color: #b52a2a; border: 1px solid rgba(181,42,42,.18); }
+.badge.warn { background: rgba(255,206,49,.13); color: #946700; border: 1px solid rgba(255,206,49,.35); }
+
+
+.format-box { position: relative; }
+.xlsx-hint {
+  position: relative;
+  cursor: default;
+}
+.xlsx-hint:hover { border-color: rgba(42,98,212,.25); }
+.xlsx-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0; right: 0;
+  z-index: 100;
+  background: rgba(255,255,255,.96);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,.95);
+  box-shadow: 0 12px 40px rgba(37,68,120,.18), 0 2px 8px rgba(37,68,120,.08);
+  border-radius: 14px;
+  padding: 12px;
+  overflow-x: auto;
+  animation: tooltipIn .22s cubic-bezier(.22,1,.36,1);
+}
+.xlsx-hint:hover .xlsx-tooltip { display: block; }
+@keyframes tooltipIn {
+  from { opacity:0; transform: translateY(8px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.xlsx-tooltip::after {
+  content: '';
+  position: absolute; bottom: -6px; left: 32px;
+  width: 12px; height: 12px;
+  background: rgba(255,255,255,.96);
+  border-right: 1px solid rgba(255,255,255,.95);
+  border-bottom: 1px solid rgba(255,255,255,.95);
+  rotate: 45deg;
+}
+.xlsx-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.xlsx-table thead tr { background: #1d7143; }
+.xlsx-table th {
+  padding: 5px 8px; color: #fff; font-weight: 700;
+  font-size: 10px; text-align: left; white-space: nowrap;
+}
+.xlsx-table th.col-a { background: #1a6b3c; }
+.xlsx-table td {
+  padding: 4px 8px; border-bottom: 1px solid #e2efda;
+  font-family: 'Calibri', monospace; font-size: 11px;
+  color: #1e1e1e; white-space: nowrap;
+}
+.xlsx-table tr:nth-child(even) td { background: #f0f7ec; }
+.xlsx-table tr:nth-child(odd) td { background: #fff; }
+.xlsx-table td.col-a { background: #e8f5e0; color: #1d7143; font-weight: 700; border-right: 2px solid #a9d18e; }
+.xlsx-row-num { color: #888; font-size: 9px; text-align: right; padding: 4px 6px; background: #f2f2f2; border-right: 1px solid #d0d0d0; border-bottom: 1px solid #e0e0e0; width: 18px; font-family: monospace; }
+.xlsx-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.xlsx-icon { font-size: 18px; }
+.xlsx-title { font-size: 12px; font-weight: 700; color: var(--gray); }
+.xlsx-tag { font-size: 10px; font-weight: 700; background: #1d7143; color: #fff; padding: 2px 7px; border-radius: 4px; }
+
+
+.info-btn {
+  position: fixed;
+  top: 20px; left: 20px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.65);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.85);
+  box-shadow: 0 4px 14px rgba(37,68,120,.12);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 15px; font-weight: 800;
+  color: var(--blue-dark);
+  z-index: 200;
+  transition: all .2s;
+}
+.info-btn:hover { background: rgba(255,255,255,.9); transform: scale(1.08); }
+
+
+/* Update screen — two-column layout */
+.update-layout {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+}
+.tag-side-panel {
+  width: 260px;
+  flex-shrink: 0;
+  border-radius: 20px;
+  padding: 24px 22px;
+}
+.tag-side-panel .side-title {
+  font-size: 13px; font-weight: 800; color: var(--black);
+  letter-spacing: -.02em; margin-bottom: 4px;
+}
+.tag-side-panel .side-sub {
+  font-size: 12px; color: var(--gray); line-height: 1.55; margin-bottom: 18px;
+}
+.tag-side-preview {
+  display: none;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(30,202,211,.07);
+  border: 1px solid rgba(30,202,211,.25);
+  border-radius: 12px;
+}
+.tag-side-preview .tsp-label { font-size: 11px; font-weight: 800; color: rgba(10,122,128,.6); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+.tag-side-preview .tsp-value { font-size: 15px; font-weight: 800; color: var(--blue-dark); }
+.info-tooltip {
+  display: none;
+  position: fixed;
+  top: 64px; left: 20px;
+  z-index: 300;
+  background: rgba(255,255,255,.96);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,.95);
+  box-shadow: 0 16px 48px rgba(37,68,120,.18), 0 4px 12px rgba(37,68,120,.08);
+  border-radius: 16px;
+  padding: 20px;
+  width: 310px;
+  animation: tooltipIn .22s cubic-bezier(.22,1,.36,1);
+}
+.info-btn:hover .info-tooltip { display: block; }
+.info-tooltip h4 { font-size: 13px; font-weight: 800; color: var(--black); margin-bottom: 16px; }
+.flow-step {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px;
+}
+.flow-step:last-child { margin-bottom: 0; }
+.flow-dot {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff;
+  background: var(--blue);
+  box-shadow: 0 2px 8px rgba(42,98,212,.3);
+  margin-top: 1px;
+}
+.flow-dot.teal { background: var(--teal); box-shadow: 0 2px 8px rgba(30,202,211,.3); }
+.flow-dot.dark { background: var(--blue-dark); box-shadow: 0 2px 8px rgba(37,68,120,.3); }
+.flow-dot.green { background: #1d7143; box-shadow: 0 2px 8px rgba(29,113,67,.3); }
+.flow-dot.red { background: #b52a2a; box-shadow: 0 2px 8px rgba(181,42,42,.3); }
+.flow-text strong { font-size: 13px; font-weight: 700; color: var(--black); display: block; }
+.flow-text span { font-size: 12px; color: var(--gray); }
+.flow-connector { width: 2px; height: 10px; background: rgba(42,98,212,.15); margin: 0 0 0 13px; border-radius: 2px; }
+
+
+/* Home screen */
+.home-screen {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 80vh; text-align: center;
+  padding: 20px;
+}
+.home-screen h1 { font-size: 20px; font-weight: 800; color: var(--black); letter-spacing: -.03em; margin-bottom: 8px; }
+.home-screen p { font-size: 14px; color: var(--gray); margin-bottom: 44px; line-height: 1.6; max-width: 420px; }
+.path-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 560px; }
+.path-card {
+  padding: 28px 24px; border-radius: 20px; cursor: pointer;
+  transition: all .25s cubic-bezier(.22,1,.36,1);
+  text-align: left;
+}
+.path-card:hover { transform: translateY(-3px); }
+.path-card.blue {
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  box-shadow: 0 8px 28px rgba(42,98,212,.35);
+  color: #fff;
+}
+.path-card.teal-card {
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.85);
+  box-shadow: 0 8px 28px rgba(37,68,120,.1);
+  color: var(--black);
+}
+.path-card.teal-card:hover { box-shadow: 0 12px 36px rgba(30,202,211,.2); border-color: rgba(30,202,211,.4); }
+.path-icon { font-size: 28px; margin-bottom: 14px; display: block; }
+.path-title { font-size: 16px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.02em; }
+.path-sub { font-size: 12px; opacity: .7; line-height: 1.5; }
+.path-card.blue .path-sub { opacity: .75; }
+
+/* Tag screen */
+.tag-field {
+  margin-bottom: 20px;
+}
+.tag-field label { display: block; font-size: 12px; font-weight: 800; color: var(--gray); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.tag-input {
+  width: 100%; padding: 12px 16px;
+  border: 1.5px solid rgba(37,68,120,.15);
+  border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  font-family: var(--font);
+  color: var(--black);
+  background: rgba(255,255,255,.7);
+  outline: none; transition: border-color .2s;
+}
+.tag-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(30,202,211,.12); }
+.tag-input::placeholder { color: rgba(71,71,71,.4); font-weight: 500; }
+
+/* Buttons */
+.btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+.btn { padding: 11px 22px; border-radius: 10px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; font-family: var(--font); transition: all .2s; letter-spacing: -.01em; }
+.btn-primary { background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%); color: #fff; box-shadow: 0 4px 16px rgba(42,98,212,.32), 0 1px 0 rgba(255,255,255,.2) inset; }
+.btn-primary:hover { box-shadow: 0 6px 22px rgba(42,98,212,.45); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-ghost { background: rgba(255,255,255,.55); color: var(--gray); border: 1px solid rgba(37,68,120,.15); backdrop-filter: blur(8px); font-weight: 700; }
+.btn-ghost:hover { background: rgba(255,255,255,.85); }
+.btn-teal { background: rgba(30,202,211,.1); color: #0a7a80; border: 1px solid rgba(30,202,211,.28); font-weight: 700; }
+.btn-teal:hover { background: rgba(30,202,211,.18); }
+</style>
+</head>
+<body>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+<div class="bg-blob bg-blob-3"></div>
+
+<!-- HOME SCREEN -->
+<div id="home" style="width:100%;max-width:680px;position:relative;z-index:1;animation:pageIn .55s cubic-bezier(.22,1,.36,1) both">
+  <div class="home-screen">
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:0;justify-content:center;margin-bottom:16px">
+        <span style="font-size:28px;font-weight:800;color:var(--blue)">+</span><span style="font-size:28px;font-weight:800;color:var(--blue-dark)">huli</span>
+      </div>
+      <div style="font-size:22px;font-weight:800;color:var(--blue);letter-spacing:-.01em;margin-bottom:8px;text-transform:uppercase">Actualización de usuarios en Intercom</div>
+      <h1>¿Qué quieres hacer hoy?</h1>
+      <p>Selecciona una acción para gestionar tus contactos de Intercom de forma controlada.</p>
+    </div>
+    <div class="path-cards">
+      <div class="path-card teal-card" onclick="showTag()">
+        <span class="path-icon">🏷</span>
+        <div class="path-title">Taggear contactos</div>
+        <div class="path-sub">Aplica una etiqueta a un grupo de contactos desde un CSV</div>
+      </div>
+      <div class="path-card blue" onclick="showUpdate()">
+        <span class="path-icon">🏷️ <strong>+</strong> 📝</span>
+        <div class="path-title">Taggear y actualizar atributos</div>
+        <div class="path-sub">Aplica tags y actualiza atributos de contactos en un solo proceso</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAG SCREEN -->
+<div id="tag-screen" style="display:none;width:100%;max-width:680px;position:relative;z-index:1;animation:pageIn .4s cubic-bezier(.22,1,.36,1) both">
+  <div style="margin-bottom:28px">
+<div style="display:flex;align-items:center;gap:0;margin-bottom:16px">
+      <span style="font-size:22px;font-weight:800;color:var(--blue)">+</span><span style="font-size:22px;font-weight:800;color:var(--blue-dark)">huli</span>
+    </div>
+    <h1 style="font-size:26px;font-weight:800;color:var(--black);letter-spacing:-.03em;margin-bottom:6px">Taggear contactos</h1>
+    <p style="font-size:14px;color:var(--gray);line-height:1.65">Escribe el tag que quieres aplicar y sube tu CSV. El tag se asignará a todos los contactos del archivo.</p>
+  </div>
+
+  <div class="steps-bar glass">
+    <div class="step-item"><div class="step-num active" id="tsn1"><span>1</span></div><div class="step-label active" id="tsl1">Cargar archivo</div></div>
+    <div class="step-conn" id="tsc1"></div>
+    <div class="step-item"><div class="step-num" id="tsn2"><span>2</span></div><div class="step-label" id="tsl2">Confirmar tag</div></div>
+    <div class="step-conn" id="tsc2"></div>
+    <div class="step-item"><div class="step-num" id="tsn3"><span>3</span></div><div class="step-label" id="tsl3">Verificar tag</div></div>
+    <div class="step-conn" id="tsc3"></div>
+    <div class="step-item"><div class="step-num" id="tsn4"><span>4</span></div><div class="step-label" id="tsl4">Procesar</div></div>
+    <div class="step-conn" id="tsc4"></div>
+    <div class="step-item"><div class="step-num" id="tsn5"><span>5</span></div><div class="step-label" id="tsl5">Reporte</div></div>
+  </div>
+  <div class="card glass">
+    <div class="tag-field">
+      <label>Nombre del tag</label>
+      <input class="tag-input" type="text" id="tagName" placeholder="ej. precio-2026, campana-abril, reactivacion..." oninput="onTagNameInput(this.value)" />
+      <div id="tagNameWarn" style="display:none;margin-top:8px;padding:10px 14px;background:rgba(255,206,49,.12);border:1px solid rgba(255,206,49,.55);border-radius:10px;font-size:12px;color:#7a5c00;font-weight:600"></div>
+    </div>
+    <div class="drop-zone" id="dz-tag">
+      <input type="file" accept=".csv" onchange="handleTagFile(this)">
+      <div class="upload-icon">↑</div>
+      <div class="drop-title">Arrastra tu CSV aquí</div>
+      <div class="drop-sub">o haz clic para seleccionar un archivo</div>
+      <div class="drop-hint">Columnas obligatorias: user_id, email · Solo .csv · Máx. 10 MB</div>
+    </div>
+    <div style="margin-top:16px;padding:12px 16px;background:rgba(42,98,212,.05);border:1px solid rgba(42,98,212,.15);border-radius:10px;font-size:12px;color:var(--blue-dark);font-weight:600;display:flex;align-items:center;gap:8px">
+      <span style="font-size:16px">⚠️</span>
+      Los campos <code style="background:rgba(42,98,212,.1);padding:1px 6px;border-radius:4px;font-family:monospace">user_id</code> y <code style="background:rgba(42,98,212,.1);padding:1px 6px;border-radius:4px;font-family:monospace">email</code> son obligatorios en tu CSV.
+    </div>
+    <div class="format-box xlsx-hint" style="margin-top:14px">
+      <div class="section-label" style="margin-bottom:10px">Formato esperado al descargar en .CSV</div>
+      <pre><span class="req">user_id</span>,<span class="req">email</span>
+<span class="req">733801</span>,itzia@huli.io
+<span class="req">317</span>,doctor@clinica.com</pre>
+      <div class="xlsx-tooltip">
+        <div class="xlsx-header">
+          <span class="xlsx-icon">📗</span>
+          <span class="xlsx-title">contactos-tag.csv</span>
+          <span class="xlsx-tag">Así debe verse en tu Spreadsheet</span>
+        </div>
+        <table class="xlsx-table">
+          <thead>
+            <tr>
+              <td class="xlsx-row-num"></td>
+              <th class="col-a">A</th>
+              <th>B</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="xlsx-row-num">1</td>
+              <td class="col-a" style="font-weight:800;color:#1d7143">user_id</td>
+              <td style="font-weight:800">email</td>
+            </tr>
+            <tr><td class="xlsx-row-num">2</td><td class="col-a">733801</td><td>itzia@huli.io</td></tr>
+            <tr><td class="xlsx-row-num">3</td><td class="col-a">317</td><td>doctor@clinica.com</td></tr>
+            <tr><td class="xlsx-row-num">4</td><td class="col-a">144221</td><td>ana@clinica.com</td></tr>
+            <tr><td class="xlsx-row-num" style="color:#bbb">5</td><td class="col-a" style="color:#bbb">...</td><td style="color:#bbb"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="location.reload()" style="margin-right:auto">🏠</button>
+    <button class="btn btn-primary" onclick="goTagStep2()">Continuar →</button>
+  </div>
+
+  <!-- Tag Step 2: Confirm -->
+  <div id="tag-p2" style="display:none;margin-top:4px">
+    <div class="card glass">
+      <div class="section-label" style="margin-bottom:14px">Vista previa del archivo</div>
+      <div style="background:rgba(30,202,211,.06);border:1px solid rgba(30,202,211,.2);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:11px;color:var(--gray);margin-bottom:3px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Tag a aplicar</div>
+          <div id="tagPreview" style="font-size:20px;font-weight:800;color:var(--blue-dark)"></div>
+        </div>
+        <div class="chip teal"><div class="dot"></div><span id="tagCount">2,450</span> contactos</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th class="key">user_id</th><th>email</th></tr></thead>
+          <tbody>
+            <tr><td class="key">733801</td><td>itzia@huli.io</td></tr>
+            <tr><td class="key">317</td><td>doctor@clinica.com</td></tr>
+            <tr><td class="key">144221</td><td>ana@clinica.com</td></tr>
+            <tr><td class="key" style="color:rgba(71,71,71,.3)">+ 2,447 más...</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="location.reload()" style="margin-right:auto">🏠</button>
+      <button class="btn btn-ghost" onclick="tagGoTo(1)">← Atrás</button>
+      <button class="btn btn-primary" onclick="tagGoTo(3);startTagVerify()">Confirmar y verificar →</button>
+    </div>
+  </div>
+
+  <!-- Tag Step 3: Verificar tag -->
+  <div id="tag-p3" style="display:none;margin-top:4px">
+    <div class="card glass">
+      <div id="tvChecking" style="text-align:center;padding:32px 16px">
+        <div style="font-size:36px;margin-bottom:14px">🔍</div>
+        <div style="font-weight:800;font-size:16px;color:var(--blue-dark);margin-bottom:6px">Verificando tag en Intercom...</div>
+        <div style="font-size:13px;color:var(--gray)">Consultando GET /tags</div>
+      </div>
+      <div id="tvExists" style="display:none">
+        <div style="padding:16px 18px;background:rgba(255,206,49,.1);border:1px solid rgba(255,206,49,.5);border-radius:12px;margin-bottom:16px">
+          <div style="font-size:20px;margin-bottom:8px">⚠️</div>
+          <div style="font-weight:800;color:#7a5c00;margin-bottom:6px">Este tag ya existe en Intercom</div>
+          <div id="tvDetail" style="font-size:13px;color:#7a5c00;line-height:1.5"></div>
+        </div>
+        <div style="font-size:12px;color:var(--gray);margin-bottom:8px">Sugerencia de nombre alternativo:</div>
+        <div id="tvSuggestion" style="display:inline-block;padding:6px 14px;background:rgba(42,98,212,.08);border:1px solid rgba(42,98,212,.15);border-radius:8px;font-weight:700;color:var(--blue-dark);font-size:14px"></div>
+      </div>
+      <div id="tvAvailable" style="display:none;padding:20px 18px;background:rgba(30,202,211,.07);border:1px solid rgba(30,202,211,.25);border-radius:12px;text-align:center">
+        <div style="font-size:28px;margin-bottom:10px">✅</div>
+        <div style="font-weight:800;color:#0a7a80;margin-bottom:4px">Tag disponible</div>
+        <div style="font-size:13px;color:#0a7a80">Este tag es nuevo y se creará en Intercom al procesar.</div>
+      </div>
+    </div>
+    <div class="btn-row" id="tvBtnExists" style="display:none">
+      <button class="btn btn-ghost" onclick="location.reload()" style="margin-right:auto">🏠</button>
+      <button class="btn btn-ghost" onclick="tagGoTo(2)">← Cambiar tag</button>
+      <button class="btn btn-primary" onclick="tagGoTo(4);startTagProg()">Usar este tag de todas formas →</button>
+    </div>
+  </div>
+
+  <!-- Tag Step 4: Processing -->
+  <div id="tag-p4" style="display:none;margin-top:4px">
+    <div class="card glass">
+      <div class="proc-center">
+        <div class="big-num" id="tpn">0</div>
+        <div class="big-sub">de <span id="tpTotal">0</span> contactos procesados</div>
+      </div>
+      <div class="pill-track">
+        <div class="pill-fill" id="tpf"></div>
+        <div class="pill-steps">
+          <div class="pill-step active" id="tps1">🏷️</div>
+          <div class="pill-step" id="tps2">🔍</div>
+          <div class="pill-step" id="tps3">✓</div>
+        </div>
+      </div>
+      <div class="prog-labels"><span id="tpl">Iniciando...</span><span id="tpp">0%</span></div>
+      <div class="log-box" id="tlb"><div class="info">→ Conectando con Supabase Edge Function...</div></div>
+    </div>
+  </div>
+
+  <!-- Tag Step 5: Report -->
+  <div id="tag-p5" style="display:none;margin-top:4px">
+    <div class="report-bento">
+      <div class="bento-hero">
+        <div class="bh-label">Tags aplicados</div>
+        <div class="bh-num" id="trApplied">—</div>
+        <div class="bh-sub">de <span id="trTotal">—</span> procesados</div>
+      </div>
+      <div style="display:grid;grid-template-rows:1fr 1fr;gap:12px;">
+        <div class="bento-stat danger"><div class="bs-num" id="trNotFound">—</div><div class="bs-lbl">No encontrados</div></div>
+        <div class="bento-stat warning"><div class="bs-num" id="trErrors">—</div><div class="bs-lbl">Con errores</div></div>
+      </div>
+      <div class="bento-list" id="trList"></div>
+    </div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="location.reload()" style="margin-right:auto">🏠</button>
+      <button class="btn btn-teal">↓ Descargar reporte CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE SCREEN -->
+<div id="update-screen" style="display:none;width:100%;max-width:960px;position:relative;z-index:1">
+
+<div class="info-btn">
+  i
+  <div class="info-tooltip">
+    <svg width="300" viewBox="0 0 320 650" xmlns="http://www.w3.org/2000/svg" style="display:block">
+      <defs>
+        <marker id="iarrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="iarrow-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="iarrow-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- STEP 1 -->
+      <rect x="50" y="10" width="200" height="52" rx="8" fill="#f0f5ff" stroke="#2a62d4" stroke-width="1"/>
+      <text x="150" y="30" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" font-weight="700" fill="#254478">Usuario sube CSV</text>
+      <text x="150" y="48" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="#474747">obligatorio: user_id + email</text>
+
+      <line x1="150" y1="62" x2="150" y2="102" stroke="#888" stroke-width="1" marker-end="url(#iarrow)"/>
+
+      <!-- STEP 2 -->
+      <rect x="50" y="102" width="200" height="52" rx="8" fill="#e0faf8" stroke="#1ecad3" stroke-width="1"/>
+      <text x="150" y="122" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" font-weight="700" fill="#0a7a80">Validación del CSV</text>
+      <text x="150" y="140" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="#474747">detecta columnas + preview</text>
+
+      <line x1="150" y1="154" x2="150" y2="194" stroke="#888" stroke-width="1" marker-end="url(#iarrow)"/>
+
+      <!-- STEP 3 -->
+      <rect x="50" y="194" width="200" height="52" rx="8" fill="#e0faf8" stroke="#1ecad3" stroke-width="1"/>
+      <text x="150" y="214" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" font-weight="700" fill="#0a7a80">Confirmación</text>
+      <text x="150" y="232" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="#474747">X registros, Y atributos</text>
+
+      <line x1="150" y1="246" x2="150" y2="286" stroke="#888" stroke-width="1" marker-end="url(#iarrow)"/>
+
+      <!-- STEP 4 -->
+      <rect x="50" y="286" width="200" height="52" rx="8" fill="#ede8ff" stroke="#534AB7" stroke-width="1"/>
+      <text x="150" y="306" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" font-weight="700" fill="#3C3489">Supabase Edge Function</text>
+      <text x="150" y="324" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="#474747">Access Token seguro</text>
+
+      <line x1="150" y1="338" x2="150" y2="378" stroke="#888" stroke-width="1" marker-end="url(#iarrow)"/>
+
+      <!-- STEP 5 -->
+      <rect x="50" y="378" width="200" height="52" rx="8" fill="#ede8ff" stroke="#534AB7" stroke-width="1"/>
+      <text x="150" y="398" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" font-weight="700" fill="#3C3489">API Intercom</text>
+      <text x="150" y="416" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="#474747">busca por user_id</text>
+
+      <!-- Branch exists -->
+      <path d="M110 430 L110 470 L60 470 L60 510" fill="none" stroke="#1D9E75" stroke-width="1" marker-end="url(#iarrow-g)"/>
+      <text x="68" y="458" font-family="Plus Jakarta Sans,sans-serif" font-size="9" font-weight="700" fill="#1D9E75">existe</text>
+
+      <!-- Branch not found -->
+      <path d="M190 430 L190 470 L240 470 L240 510" fill="none" stroke="#E24B4A" stroke-width="1" marker-end="url(#iarrow-r)"/>
+      <text x="200" y="458" font-family="Plus Jakarta Sans,sans-serif" font-size="9" font-weight="700" fill="#E24B4A">no existe</text>
+
+      <!-- Result: updated -->
+      <rect x="10" y="510" width="110" height="44" rx="8" fill="#e0faf8" stroke="#1ecad3" stroke-width="1"/>
+      <text x="65" y="530" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#0a7a80">Actualiza</text>
+      <text x="65" y="546" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="#474747">atributos</text>
+
+      <!-- Result: not found -->
+      <rect x="180" y="510" width="110" height="44" rx="8" fill="#ffe8e8" stroke="#E24B4A" stroke-width="1"/>
+      <text x="235" y="530" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#b52a2a">No encontrado</text>
+      <text x="235" y="546" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="#474747">marca en reporte</text>
+
+      <!-- Converge to report -->
+      <path d="M65 554 L65 590 L150 590" fill="none" stroke="#888" stroke-width="1" marker-end="url(#iarrow)"/>
+      <path d="M235 554 L235 590 L150 590" fill="none" stroke="#888" stroke-width="1" marker-end="url(#iarrow)"/>
+
+      <!-- STEP 6: Report -->
+      <rect x="50" y="578" width="200" height="52" rx="8" fill="#f0f5ff" stroke="#2a62d4" stroke-width="1"/>
+      <text x="150" y="598" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" font-weight="700" fill="#254478">Reporte descargable</text>
+      <text x="150" y="616" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="#474747">actualizados / errores</text>
+    </svg>
+  </div>
+</div>
+
+<div style="width:100%">
+
+  <div class="header">
+    <div class="logo-row">
+      <span class="logo-plus">+</span><span class="logo-name">huli</span>
+    </div>
+    <h1>Actualización masiva de contactos</h1>
+    <p>Sube un CSV para actualizar atributos en Intercom de forma controlada. Cada registro se valida contra la API antes de escribirse.</p>
+  </div>
+
+  <div class="steps-bar glass">
+    <div class="step-item"><div class="step-num active" id="sn1"><span>1</span></div><div class="step-label active" id="sl1">Cargar archivo</div></div>
+    <div class="step-conn" id="sc1"></div>
+    <div class="step-item"><div class="step-num" id="sn2"><span>2</span></div><div class="step-label" id="sl2">Confirmar</div></div>
+    <div class="step-conn" id="sc2"></div>
+    <div class="step-item"><div class="step-num" id="sn3"><span>3</span></div><div class="step-label" id="sl3">Verificar tag</div></div>
+    <div class="step-conn" id="sc3"></div>
+    <div class="step-item"><div class="step-num" id="sn4"><span>4</span></div><div class="step-label" id="sl4">Procesar</div></div>
+    <div class="step-conn" id="sc4"></div>
+    <div class="step-item"><div class="step-num" id="sn5"><span>5</span></div><div class="step-label" id="sl5">Reporte</div></div>
+  </div>
+
+  <div class="update-layout">
+  <div style="flex:1;min-width:0">
+
+  <!-- P1 -->
+  <div class="panel active" id="p1">
+    <div class="card glass">
+      <div class="drop-zone" id="dz">
+        <input type="file" accept=".csv" onchange="handleFile(this)">
+        <div class="upload-icon">↑</div>
+        <div class="drop-title">Arrastra tu CSV aquí</div>
+        <div class="drop-sub">o haz clic para seleccionar un archivo</div>
+        <div class="drop-hint">Columnas obligatorias: user_id, email · Solo .csv · Máx. 10 MB</div>
+      </div>
+      <div style="margin-top:16px;padding:12px 16px;background:rgba(42,98,212,.05);border:1px solid rgba(42,98,212,.15);border-radius:10px;font-size:12px;color:var(--blue-dark);font-weight:600;display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">⚠️</span>
+        Los campos <code style="background:rgba(42,98,212,.1);padding:1px 6px;border-radius:4px;font-family:monospace">user_id</code> y <code style="background:rgba(42,98,212,.1);padding:1px 6px;border-radius:4px;font-family:monospace">email</code> son obligatorios en tu CSV.
+      </div>
+      <div class="format-box xlsx-hint" style="margin-top:14px">
+        <div class="section-label" style="margin-bottom:10px">Formato esperado al descargar en .CSV</div>
+        <pre><span class="req">user_id</span>,<span class="req">email</span>,<span class="opt">old_baseplan_price</span>,<span class="opt">new_baseplan_price</span>,<span class="opt">person_tag</span>
+<span class="req">733801</span>,<span class="opt">itzia.moreno@huli.io</span>,490,650,precio-2026
+<span class="req">317</span>,<span class="opt">gabriela.garcia@huli.io</span>,390,550,precio-2026</pre>
+        <div class="xlsx-tooltip">
+          <div class="xlsx-header">
+            <span class="xlsx-icon">📗</span>
+            <span class="xlsx-title">precios-campana-2026.csv</span>
+            <span class="xlsx-tag">Así debe verse en tu Spreadsheet</span>
+          </div>
+          <table class="xlsx-table">
+            <thead>
+              <tr>
+                <td class="xlsx-row-num"></td>
+                <th class="col-a">A</th>
+                <th>B</th>
+                <th>C</th>
+                <th>D</th>
+                <th>E</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="xlsx-row-num">1</td>
+                <td class="col-a" style="font-weight:800;color:#1d7143">user_id</td>
+                <td style="font-weight:800">email</td>
+                <td style="font-weight:800">old_baseplan_price</td>
+                <td style="font-weight:800">new_baseplan_price</td>
+                <td style="font-weight:800">person_tag</td>
+              </tr>
+              <tr><td class="xlsx-row-num">2</td><td class="col-a">733801</td><td>ej_1@huli.io</td><td>490</td><td>650</td><td>precio-2026</td></tr>
+              <tr><td class="xlsx-row-num">3</td><td class="col-a">317</td><td>ej_2@huli.io</td><td>390</td><td>550</td><td>precio-2026</td></tr>
+              <tr><td class="xlsx-row-num">4</td><td class="col-a">144221</td><td>ej_3@huli.io</td><td>290</td><td>450</td><td>precio-2026</td></tr>
+              <tr><td class="xlsx-row-num" style="color:#bbb">5</td><td class="col-a" style="color:#bbb">...</td><td style="color:#bbb"></td><td style="color:#bbb"></td><td style="color:#bbb"></td><td style="color:#bbb"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="tagRequiredMsg" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(181,42,42,.07);border:1px solid rgba(181,42,42,.2);border-radius:10px;font-size:12px;color:#b52a2a;font-weight:600">⚠ Escribe el nombre del tag antes de continuar.</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="location.reload()" style="margin-right:auto">🏠</button>
+      <button class="btn btn-primary" onclick="tryGoToStep2()">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- P2 -->
+  <div class="panel" id="p2">
+    <div class="card glass">
+      <div class="section-label">Vista previa del archivo</div>
+      <div class="preview-chips">
+        <div class="chip teal"><div class="dot"></div>2,450 registros</div>
+        <div class="chip teal"><div class="dot"></div>3 atributos detectados</div>
+        <div class="chip">precios-campana-2026.csv</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th class="key">user_id</th><th>old_baseplan_price</th><th>new_baseplan_price</th><th>person_tag</th></tr></thead>
+          <tbody>
+            <tr><td class="key">733801</td><td>490</td><td>650</td><td class="ptag-cell">—</td></tr>
+            <tr><td class="key">317</td><td>390</td><td>550</td><td class="ptag-cell">—</td></tr>
+            <tr><td class="key">144221</td><td>290</td><td>450</td><td class="ptag-cell">—</td></tr>
+            <tr><td class="key">88904</td><td>590</td><td>750</td><td class="ptag-cell">—</td></tr>
+            <tr><td class="key" style="color:rgba(71,71,71,.3)">+ 2,446 más...</td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="attrs-row">
+        <div class="section-label" style="margin-top:18px">Atributos a actualizar en Intercom</div>
+        <div class="attrs-list">
+          <span class="attr-tag">old_baseplan_price</span>
+          <span class="attr-tag">new_baseplan_price</span>
+          <span class="attr-tag">person_tag</span>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="location.reload()" style="margin-right:auto">🏠</button>
+      <button class="btn btn-ghost" onclick="goTo(1)">← Atrás</button>
+      <button class="btn btn-primary" onclick="goTo(3);startVerify()">Confirmar y verificar →</button>
+    </div>
+  </div>
+
+  <!-- P3: Verificar tag -->
+  <div class="panel" id="p3">
+    <div class="card glass">
+      <div id="uvChecking" style="text-align:center;padding:32px 16px">
+        <div style="font-size:36px;margin-bottom:14px">🔍</div>
+        <div style="font-weight:800;font-size:16px;color:var(--blue-dark);margin-bottom:6px">Verificando tag en Intercom...</div>
+        <div style="font-size:13px;color:var(--gray)">Consultando GET /tags</div>
+      </div>
+      <div id="uvExists" style="display:none">
+        <div style="padding:16px 18px;background:rgba(255,206,49,.1);border:1px solid rgba(255,206,49,.5);border-radius:12px;margin-bottom:16px">
+          <div style="font-size:20px;margin-bottom:8px">⚠️</div>
+          <div style="font-weight:800;color:#7a5c00;margin-bottom:6px">Este tag ya existe en Intercom</div>
+          <div id="uvDetail" style="font-size:13px;color:#7a5c00;line-height:1.5"></div>
+        </div>
+        <div style="font-size:12px;color:var(--gray);margin-bottom:8px">Sugerencia de nombre alternativo:</div>
+        <div id="uvSuggestion" style="display:inline-block;padding:6px 14px;background:rgba(42,98,212,.08);border:1px solid rgba(42,98,212,.15);border-radius:8px;font-weight:700;color:var(--blue-dark);font-size:14px"></div>
+      </div>
+      <div id="uvAvailable" style="display:none;padding:20px 18px;background:rgba(30,202,211,.07);border:1px solid rgba(30,202,211,.25);border-radius:12px;text-align:center">
+        <div style="font-size:28px;margin-bottom:10px">✅</div>
+        <div style="font-weight:800;color:#0a7a80;margin-bottom:4px">Tag disponible</div>
+        <div style="font-size:13px;color:#0a7a80">Este tag es nuevo y se creará en Intercom al procesar.</div>
+      </div>
+    </div>
+    <div class="btn-row" id="uvBtnExists" style="display:none">
+      <button class="btn btn-ghost" onclick="location.reload()" style="margin-right:auto">🏠</button>
+      <button class="btn btn-ghost" onclick="goTo(1)">← Cambiar tag</button>
+      <button class="btn btn-primary" onclick="goTo(4);startProg()">Usar este tag de todas formas →</button>
+    </div>
+  </div>
+
+  <!-- P4: Procesar -->
+  <div class="panel" id="p4">
+    <div class="card glass">
+      <div class="proc-center">
+        <div class="big-num" id="pn">0</div>
+        <div class="big-sub">de <span id="pTotal">0</span> registros procesados</div>
+      </div>
+      <div class="pill-track">
+        <div class="pill-fill" id="pf"></div>
+        <div class="pill-steps">
+          <div class="pill-step active" id="ps1">📄</div>
+          <div class="pill-step" id="ps2">🔍</div>
+          <div class="pill-step" id="ps3">⚡</div>
+        </div>
+      </div>
+      <div class="prog-labels"><span id="pl">Iniciando...</span><span id="pp">0%</span></div>
+      <div class="log-box" id="lb"><div class="info">→ Conectando con Supabase Edge Function...</div></div>
+    </div>
+  </div>
+
+  <!-- P5: Reporte -->
+  <div class="panel" id="p5">
+    <div class="report-bento">
+      <div class="bento-hero">
+        <div class="bh-label">Registros actualizados</div>
+        <div class="bh-num" id="urUpdated">—</div>
+        <div class="bh-sub">de <span id="urTotal">—</span> procesados</div>
+      </div>
+      <div style="display:grid;grid-template-rows:1fr 1fr;gap:12px;">
+        <div class="bento-stat danger">
+          <div class="bs-num" id="urNotFound">—</div>
+          <div class="bs-lbl">No encontrados</div>
+        </div>
+        <div class="bento-stat warning">
+          <div class="bs-num" id="urErrors">—</div>
+          <div class="bs-lbl">Con errores</div>
+        </div>
+      </div>
+      <div class="bento-list" id="urList"></div>
+    </div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="location.reload()" style="margin-right:auto">🏠</button>
+      <button class="btn btn-teal">↓ Descargar reporte CSV</button>
+      <button class="btn btn-primary" onclick="goTo(1)">Nueva carga</button>
+    </div>
+  </div>
+
+  </div><!-- end panels -->
+
+  <div class="tag-side-panel glass">
+    <div class="section-label" style="margin-bottom:12px">Tag a aplicar</div>
+    <div class="side-title">Etiquetar contactos</div>
+    <div class="side-sub">El tag se aplicará a todos los contactos del CSV además de actualizar sus atributos.</div>
+    <div class="tag-field">
+      <label>Nombre del tag</label>
+      <input class="tag-input" type="text" id="updateTagName" placeholder="ej. precio-2026, campana-abril..." oninput="onUpdateTagInput(this.value)" />
+      <div id="updateTagNameWarn" style="display:none;margin-top:8px;padding:10px 14px;background:rgba(255,206,49,.12);border:1px solid rgba(255,206,49,.55);border-radius:10px;font-size:12px;color:#7a5c00;font-weight:600"></div>
+    </div>
+    <div class="tag-side-preview" id="tagSidePreview">
+      <div class="tsp-label">Tag confirmado</div>
+      <div class="tsp-value" id="tagSideValue"></div>
+    </div>
+  </div>
+
+  </div><!-- end update-layout -->
+
+</div><!-- end outer wrapper -->
+</div><!-- end update-screen -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+const EXISTING_TAGS={
+  'precios':{count:3241,since:2023},
+  'reactivacion':{count:892,since:2024},
+  'campana-abril':{count:1567,since:2024}
+};
+let tagWarnTimer=null;
+function onTagNameInput(val){
+  clearTimeout(tagWarnTimer);
+  const warn=document.getElementById('tagNameWarn');
+  if(!val.trim()){warn.style.display='none';return;}
+  tagWarnTimer=setTimeout(()=>{
+    const ex=EXISTING_TAGS[val.trim().toLowerCase()];
+    if(ex){
+      warn.style.display='';
+      warn.textContent=`⚠️ Este tag ya existe y tiene ${ex.count.toLocaleString()} contactos etiquetados desde ${ex.since}.`;
+    } else { warn.style.display='none'; }
+  },400);
+}
+let updateWarnTimer=null;
+function onUpdateTagInput(val){
+  const preview=document.getElementById('tagSidePreview');
+  const valueEl=document.getElementById('tagSideValue');
+  if(val.trim()){ preview.style.display='block'; valueEl.textContent=val.trim(); }
+  else { preview.style.display='none'; }
+  clearTimeout(updateWarnTimer);
+  const warn=document.getElementById('updateTagNameWarn');
+  if(!val.trim()){warn.style.display='none';return;}
+  updateWarnTimer=setTimeout(()=>{
+    const ex=EXISTING_TAGS[val.trim().toLowerCase()];
+    if(ex){
+      warn.style.display='';
+      warn.textContent=`⚠️ Este tag ya existe y tiene ${ex.count.toLocaleString()} contactos etiquetados desde ${ex.since}.`;
+    } else { warn.style.display='none'; }
+  },400);
+}
+function showTag(){
+  document.getElementById('home').style.display='none';
+  document.getElementById('tag-screen').style.display='';
+  document.getElementById('update-screen').style.display='none';
+}
+function showUpdate(){
+  document.getElementById('home').style.display='none';
+  document.getElementById('tag-screen').style.display='none';
+  document.getElementById('update-screen').style.display='';
+}
+function tryGoToStep2(){
+  const tag=(document.getElementById('updateTagName').value||'').trim();
+  const msg=document.getElementById('tagRequiredMsg');
+  if(!tag){ msg.style.display='block'; document.getElementById('updateTagName').focus(); return; }
+  msg.style.display='none';
+  goTo(2);
+}
+let tagCSVData=null;
+function normalizeHeader(h){
+  return h.trim().replace(/^"|"$/g,'').toLowerCase().replace(/\s+/g,'_');
+}
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/);
+  if(!lines.length) return null;
+  const rawHeaders=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+  const headers=rawHeaders.map(normalizeHeader);
+  const rows=lines.slice(1).map(line=>{
+    const vals=line.split(',').map(v=>v.trim().replace(/^"|"$/g,''));
+    const obj={};headers.forEach((h,i)=>obj[h]=vals[i]||'');return obj;
+  }).filter(r=>Object.values(r).some(v=>v));
+  return {headers,rows};
+}
+function showDzLoaded(dz,name,count){
+  dz.classList.remove('dragover');dz.classList.add('loaded');
+  dz.querySelector('.upload-icon').textContent='✓';
+  dz.querySelector('.drop-title').textContent=name;
+  dz.querySelector('.drop-sub').textContent=count.toLocaleString()+' registros detectados';
+}
+function handleTagFile(f){
+  if(!f.files.length) return;
+  const file=f.files[0];
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const data=parseCSV(e.target.result);
+    if(!data||!data.headers.includes('user_id')||!data.headers.includes('email')){
+      alert('El archivo debe tener las columnas user_id y email.');return;
+    }
+    tagCSVData={...data,filename:file.name};
+    showDzLoaded(document.getElementById('dz-tag'),file.name,data.rows.length);
+  };
+  reader.readAsText(file);
+}
+const dzTag=document.getElementById('dz-tag');
+if(dzTag){
+  dzTag.addEventListener('dragover',e=>{e.preventDefault();dzTag.classList.add('dragover');});
+  dzTag.addEventListener('dragleave',()=>dzTag.classList.remove('dragover'));
+  dzTag.addEventListener('drop',e=>{
+    e.preventDefault();dzTag.classList.remove('dragover');
+    const file=e.dataTransfer.files[0];
+    if(!file||!file.name.endsWith('.csv')) return;
+    const dt=new DataTransfer();dt.items.add(file);
+    const inp=dzTag.querySelector('input[type=file]');inp.files=dt.files;
+    handleTagFile(inp);
+  });
+}
+function tagGoTo(n){
+  ['tag-p2','tag-p3','tag-p4','tag-p5'].forEach((id,i)=>{
+    document.getElementById(id).style.display = (i===n-2)?'':'none';
+  });
+  const card1 = document.querySelector('#tag-screen .card.glass');
+  const btn1 = document.querySelector('#tag-screen > .btn-row');
+  if(n===1){ card1.style.display=''; if(btn1) btn1.style.display=''; }
+  else { card1.style.display='none'; if(btn1) btn1.style.display='none'; }
+  for(let i=1;i<=5;i++){
+    const sn=document.getElementById('tsn'+i), sl=document.getElementById('tsl'+i);
+    sn.classList.remove('active','done'); sl.classList.remove('active','done');
+    if(i<n){ sn.classList.add('done'); sl.classList.add('done'); }
+    else if(i===n){ sn.classList.add('active'); sl.classList.add('active'); }
+    if(i<5) document.getElementById('tsc'+i).classList.toggle('done', i<n);
+  }
+}
+function startTagVerify(){
+  const tag=(document.getElementById('tagName').value||'').trim();
+  ['tvChecking','tvExists','tvAvailable'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  document.getElementById('tvBtnExists').style.display='none';
+  document.getElementById('tvChecking').style.display='';
+  setTimeout(()=>{
+    document.getElementById('tvChecking').style.display='none';
+    const ex=EXISTING_TAGS[tag.toLowerCase()];
+    if(ex){
+      document.getElementById('tvDetail').textContent=`Tiene ${ex.count.toLocaleString()} contactos etiquetados desde ${ex.since}. ¿Estás segura de que quieres usarlo?`;
+      document.getElementById('tvSuggestion').textContent=tag+'-'+new Date().getFullYear();
+      document.getElementById('tvExists').style.display='';
+      document.getElementById('tvBtnExists').style.display='';
+    } else {
+      document.getElementById('tvAvailable').style.display='';
+      setTimeout(()=>{ tagGoTo(4); startTagProg(); },1200);
+    }
+  },900);
+}
+function goTagStep2(){
+  const tag=document.getElementById('tagName').value.trim();
+  if(!tag){document.getElementById('tagName').focus();return;}
+  if(!tagCSVData){alert('Selecciona un archivo CSV primero.');return;}
+  document.getElementById('tagPreview').textContent=tag;
+  document.getElementById('tagCount').textContent=tagCSVData.rows.length.toLocaleString();
+  const tbody=document.querySelector('#tag-p2 .table-wrap tbody');
+  const preview=tagCSVData.rows.slice(0,3);
+  const remaining=tagCSVData.rows.length-preview.length;
+  tbody.innerHTML=preview.map(r=>`<tr><td class="key">${r.user_id}</td><td>${r.email}</td></tr>`).join('')
+    +(remaining>0?`<tr><td class="key" style="color:rgba(71,71,71,.3)">+ ${remaining.toLocaleString()} más...</td><td></td></tr>`:'');
+  tagGoTo(2);
+}
+function getTagLogs(){
+  const total=tagCSVData?tagCSVData.rows.length:0;
+  const first=tagCSVData?tagCSVData.rows[0]:null;
+  const second=tagCSVData?tagCSVData.rows[1]:null;
+  return [
+    {c:'info',m:'→ Conectando con Supabase Edge Function...'},
+    {c:'ok',m:'✓ Conexión establecida'},
+    {c:'info',m:`→ Validando CSV — columnas user_id y email...`},
+    {c:'ok',m:`✓ Estructura válida — ${total.toLocaleString()} registros`},
+    {c:'info',m:'→ Aplicando tag...'},
+    ...(first?[{c:'ok',m:`✓ user_id ${first.user_id} — tag aplicado`}]:[]),
+    ...(second?[{c:'ok',m:`✓ user_id ${second.user_id} — tag aplicado`}]:[]),
+    {c:'ok',m:`✓ Proceso completado · ${total.toLocaleString()} registros enviados`},
+  ];
+}
+function startTagProg(){
+  const total=tagCSVData?tagCSVData.rows.length:0;
+  const TAG_LOGS=getTagLogs();
+  document.getElementById('tpTotal').textContent=total.toLocaleString();
+  let v=0,li=0;
+  const pf=document.getElementById('tpf'),pn=document.getElementById('tpn'),
+        pl=document.getElementById('tpl'),pp=document.getElementById('tpp'),
+        lb=document.getElementById('tlb');
+  const ps1=document.getElementById('tps1'),ps2=document.getElementById('tps2'),ps3=document.getElementById('tps3');
+  lb.innerHTML='';
+  ps1.classList.add('active'); ps2.classList.remove('active','done'); ps3.classList.remove('active','done');
+  const iv=setInterval(()=>{
+    v+=2; const c=Math.round(v/100*total);
+    const trackW=document.querySelector('#tag-p4 .pill-track').offsetWidth-16;
+    const fillW=Math.max(52,(v/100)*trackW);
+    pf.style.width=fillW+'px';
+    pn.textContent=c.toLocaleString(); pp.textContent=v+'%';
+    pl.textContent=v<100?'Aplicando tag...':'¡Completado!';
+    if(v>=33&&v<66){ps1.classList.add('done');ps2.classList.add('active');ps3.classList.remove('active');}
+    if(v>=66){ps1.classList.add('done');ps2.classList.add('done');ps2.classList.remove('active');ps3.classList.add('active');}
+    if(li<TAG_LOGS.length&&v>=(li+1)*10){
+      const d=document.createElement('div');d.className=TAG_LOGS[li].c;d.textContent=TAG_LOGS[li].m;
+      lb.appendChild(d);lb.scrollTop=lb.scrollHeight;li++;
+    }
+    if(v>=100){clearInterval(iv);ps3.classList.add('done');buildTagReport();setTimeout(()=>tagGoTo(5),700);}
+  },60);
+}
+function buildTagReport(){
+  const total=tagCSVData?tagCSVData.rows.length:0;
+  document.getElementById('trTotal').textContent=total.toLocaleString();
+  document.getElementById('trApplied').textContent=total.toLocaleString();
+  document.getElementById('trNotFound').textContent='0';
+  document.getElementById('trErrors').textContent='0';
+  const list=document.getElementById('trList');
+  const preview=tagCSVData?tagCSVData.rows.slice(0,3):[];
+  const remaining=total-preview.length;
+  list.innerHTML=preview.map(r=>
+    `<div class="r-row"><div class="r-icon">🏷️</div><div class="r-info"><div class="r-uid">${r.user_id} — ${r.email}</div><div class="r-name">Tag aplicado correctamente</div></div><span class="badge ok">Aplicado</span></div>`
+  ).join('')+(remaining>0?`<div class="r-row">+ ${remaining.toLocaleString()} registros más en el reporte completo</div>`:'');
+}
+function goTo(n){
+  for(let i=1;i<=5;i++){
+    document.getElementById('p'+i).classList.remove('active');
+    const sn=document.getElementById('sn'+i),sl=document.getElementById('sl'+i);
+    sn.classList.remove('active','done'); sl.classList.remove('active','done');
+    if(i<n){sn.classList.add('done');sl.classList.add('done');}
+    else if(i===n){sn.classList.add('active');sl.classList.add('active');}
+    if(i<5) document.getElementById('sc'+i).classList.toggle('done',i<n);
+  }
+  document.getElementById('p'+n).classList.add('active');
+  const sidePanel=document.querySelector('.tag-side-panel');
+  if(sidePanel) sidePanel.style.display = (n>=3) ? 'none' : '';
+  // Habilitar input de tag solo en step 1
+  if(n===1){ const ti=document.getElementById('updateTagName'); ti.readOnly=false; ti.style.opacity=''; ti.style.cursor=''; }
+  // En step 2: poblar preview con datos reales del CSV
+  if(n===2){
+    const tag=(document.getElementById('updateTagName').value||'').trim();
+    const prev=document.getElementById('tagSidePreview');
+    const val=document.getElementById('tagSideValue');
+    if(prev&&val){ prev.style.display='block'; val.textContent=tag; }
+    const tagInput=document.getElementById('updateTagName');
+    tagInput.readOnly=true; tagInput.style.opacity='0.6'; tagInput.style.cursor='default';
+    if(updateCSVData){
+      const extraCols=updateCSVData.headers.filter(h=>h!=='user_id'&&h!=='email'&&h!=='person_tag');
+      const allCols=[...extraCols,'person_tag'];
+      document.querySelector('#p2 .preview-chips').innerHTML=
+        `<div class="chip teal"><div class="dot"></div>${updateCSVData.rows.length.toLocaleString()} registros</div>`
+        +`<div class="chip teal"><div class="dot"></div>${extraCols.length} atributo${extraCols.length!==1?'s':''} detectado${extraCols.length!==1?'s':''}</div>`
+        +`<div class="chip">${updateCSVData.filename}</div>`;
+      const thead=document.querySelector('#p2 .table-wrap thead tr');
+      thead.innerHTML='<th class="key">user_id</th>'+extraCols.map(c=>`<th>${c}</th>`).join('')+'<th>person_tag</th>';
+      const tbody=document.querySelector('#p2 .table-wrap tbody');
+      const rows=updateCSVData.rows.slice(0,4);
+      const remaining=updateCSVData.rows.length-rows.length;
+      tbody.innerHTML=rows.map(r=>`<tr><td class="key">${r.user_id}</td>`+extraCols.map(c=>`<td>${r[c]||''}</td>`).join('')+`<td class="ptag-cell">${tag||'—'}</td></tr>`).join('')
+        +(remaining>0?`<tr><td class="key" style="color:rgba(71,71,71,.3)">+ ${remaining.toLocaleString()} más...</td>${allCols.map(()=>'<td></td>').join('')}</tr>`:'');
+      document.querySelector('#p2 .attrs-list').innerHTML=extraCols.map(c=>`<span class="attr-tag">${c}</span>`).join('')+`<span class="attr-tag">person_tag</span>`;
+    }
+  }
+}
+let updateCSVData=null;
+function handleFile(f){
+  if(!f.files.length) return;
+  const file=f.files[0];
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const data=parseCSV(e.target.result);
+    if(!data||!data.headers.includes('user_id')||!data.headers.includes('email')){
+      alert('El archivo debe tener las columnas user_id y email.');return;
+    }
+    updateCSVData={...data,filename:file.name};
+    showDzLoaded(document.getElementById('dz'),file.name,data.rows.length);
+  };
+  reader.readAsText(file);
+}
+const dz=document.getElementById('dz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(!file||!file.name.endsWith('.csv')) return;
+  const dt=new DataTransfer();dt.items.add(file);
+  const inp=dz.querySelector('input[type=file]');inp.files=dt.files;
+  handleFile(inp);
+});
+
+function getLogs(){
+  const total=updateCSVData?updateCSVData.rows.length:0;
+  const first=updateCSVData?updateCSVData.rows[0]:null;
+  const second=updateCSVData?updateCSVData.rows[1]:null;
+  return [
+    {c:'info',m:'→ Conectando con Supabase Edge Function...'},
+    {c:'ok',m:'✓ Conexión establecida'},
+    {c:'info',m:'→ Validando estructura del CSV...'},
+    {c:'ok',m:`✓ Columnas user_id y email detectadas — ${total.toLocaleString()} registros`},
+    {c:'info',m:'→ Procesando registros...'},
+    ...(first?[{c:'ok',m:`✓ user_id ${first.user_id} — atributos actualizados`}]:[]),
+    ...(second?[{c:'ok',m:`✓ user_id ${second.user_id} — atributos actualizados`}]:[]),
+    {c:'ok',m:`✓ Proceso completado · ${total.toLocaleString()} registros enviados`},
+  ];
+}
+function startProg(){
+  const total=updateCSVData?updateCSVData.rows.length:0;
+  const LOGS=getLogs();
+  document.getElementById('pTotal').textContent=total.toLocaleString();
+  let v=0,li=0;
+  const pf=document.getElementById('pf'),pn=document.getElementById('pn'),
+        pl=document.getElementById('pl'),pp=document.getElementById('pp'),
+        lb=document.getElementById('lb');
+  const ps1=document.getElementById('ps1'),ps2=document.getElementById('ps2'),ps3=document.getElementById('ps3');
+  lb.innerHTML='';
+  ps1.classList.add('active'); ps2.classList.remove('active','done'); ps3.classList.remove('active','done');
+  const iv=setInterval(()=>{
+    v+=2; const c=Math.round(v/100*total);
+    const trackW = document.querySelector('#p4 .pill-track').offsetWidth - 16;
+    const fillW = Math.max(52, (v/100) * trackW);
+    pf.style.width = fillW + 'px';
+    pn.textContent=c.toLocaleString();
+    pp.textContent=v+'%'; pl.textContent=v<100?'Procesando registros...':'¡Completado!';
+    if(v>=33&&v<66){ps1.classList.add('done');ps2.classList.add('active');ps3.classList.remove('active');}
+    if(v>=66){ps1.classList.add('done');ps2.classList.add('done');ps2.classList.remove('active');ps3.classList.add('active');}
+    if(li<LOGS.length&&v>=(li+1)*10){
+      const d=document.createElement('div');d.className=LOGS[li].c;d.textContent=LOGS[li].m;
+      lb.appendChild(d);lb.scrollTop=lb.scrollHeight;li++;
+    }
+    if(v>=100){clearInterval(iv);ps3.classList.add('done');buildUpdateReport();setTimeout(()=>goTo(5),700);}
+  },60);
+}
+function buildUpdateReport(){
+  const total=updateCSVData?updateCSVData.rows.length:0;
+  const extraCols=updateCSVData?updateCSVData.headers.filter(h=>h!=='user_id'&&h!=='email'&&h!=='person_tag'):[];
+  const attrLabel=[...extraCols,'person_tag'].join(', ');
+  document.getElementById('urTotal').textContent=total.toLocaleString();
+  document.getElementById('urUpdated').textContent=total.toLocaleString();
+  document.getElementById('urNotFound').textContent='0';
+  document.getElementById('urErrors').textContent='0';
+  const list=document.getElementById('urList');
+  const preview=updateCSVData?updateCSVData.rows.slice(0,3):[];
+  const remaining=total-preview.length;
+  list.innerHTML=preview.map(r=>
+    `<div class="r-row"><div class="r-icon">✓</div><div class="r-info"><div class="r-uid">${r.user_id} — ${r.email}</div><div class="r-name">${attrLabel}</div></div><span class="badge ok">Actualizado</span></div>`
+  ).join('')+(remaining>0?`<div class="r-row">+ ${remaining.toLocaleString()} registros más en el reporte completo</div>`:'');
+}
+function startVerify(){
+  const tag=(document.getElementById('updateTagName').value||'').trim();
+  ['uvChecking','uvExists','uvAvailable'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  document.getElementById('uvBtnExists').style.display='none';
+  document.getElementById('uvChecking').style.display='';
+  setTimeout(()=>{
+    document.getElementById('uvChecking').style.display='none';
+    const ex=EXISTING_TAGS[tag.toLowerCase()];
+    if(ex){
+      document.getElementById('uvDetail').textContent=`Tiene ${ex.count.toLocaleString()} contactos etiquetados desde ${ex.since}. ¿Estás segura de que quieres usarlo?`;
+      document.getElementById('uvSuggestion').textContent=tag+'-'+new Date().getFullYear();
+      document.getElementById('uvExists').style.display='';
+      document.getElementById('uvBtnExists').style.display='';
+    } else {
+      document.getElementById('uvAvailable').style.display='';
+      setTimeout(()=>{ goTo(4); startProg(); },1200);
+    }
+  },900);
+}
+</script>
+</body>
+</html>
